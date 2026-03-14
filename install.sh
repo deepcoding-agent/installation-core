@@ -1,107 +1,92 @@
 #!/usr/bin/env bash
 # =============================================================================
-# install.sh — Install dependencies for web-app and ml-datascience
+#  PrepPilot — Install dependencies (Mac / Linux)
+#  Run once before start.sh:
+#    bash installation-core/install.sh
 # =============================================================================
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m'
+ML_DIR="$ROOT/ml-datascience"
+WEB_DIR="$ROOT/web-app"
 
-info()    { echo -e "${GREEN}[install]${NC} $*"; }
-warning() { echo -e "${YELLOW}[warning]${NC} $*"; }
-error()   { echo -e "${RED}[error]${NC} $*"; exit 1; }
+RED='\033[0;31m'; GREEN='\033[0;32m'; YELLOW='\033[1;33m'
+CYAN='\033[0;36m'; BOLD='\033[1m'; RESET='\033[0m'
 
-# =============================================================================
-# 1. web-app (Next.js / Node)
-# =============================================================================
-info "Installing web-app dependencies..."
+log()  { echo -e "${CYAN}[install]${RESET} $*"; }
+ok()   { echo -e "${GREEN}[install]${RESET} $*"; }
+warn() { echo -e "${YELLOW}[install]${RESET} $*"; }
+die()  { echo -e "${RED}[install] ERROR:${RESET} $*"; exit 1; }
 
-cd "$SCRIPT_DIR/web-app"
-
-if ! command -v node &>/dev/null; then
-  error "Node.js is not installed. Install it from https://nodejs.org (v18+ recommended)."
-fi
-
-NODE_VERSION=$(node -v | sed 's/v//' | cut -d. -f1)
-if [ "$NODE_VERSION" -lt 18 ]; then
-  warning "Node.js v$NODE_VERSION detected. v18 or higher is recommended."
-fi
-
-npm install
-
-if [ ! -f ".env.local" ]; then
-  if [ -f ".env.local.example" ]; then
-    cp .env.local.example .env.local
-    warning "Created web-app/.env.local from .env.local.example — fill in your secrets before running."
-  else
-    warning "web-app/.env.local not found. Create it with the required environment variables."
-  fi
-fi
-
-info "web-app dependencies installed."
-
-# =============================================================================
-# 2. ml-datascience (Python / FastAPI)
-# =============================================================================
-info "Installing ml-datascience dependencies..."
-
-cd "$SCRIPT_DIR/ml-datascience"
-
-if ! command -v python3 &>/dev/null; then
-  error "Python 3 is not installed. Install it from https://python.org (v3.10+ recommended)."
-fi
+# ── Check prerequisites ────────────────────────────────────────────────────
+command -v python3 >/dev/null 2>&1 || die "python3 not found. Install from https://python.org or run: brew install python"
+command -v node    >/dev/null 2>&1 || die "node not found. Install from https://nodejs.org or run: brew install node"
+command -v npm     >/dev/null 2>&1 || die "npm not found. Install Node.js from https://nodejs.org"
 
 PYTHON_VERSION=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')")
-PYTHON_MAJOR=$(echo "$PYTHON_VERSION" | cut -d. -f1)
-PYTHON_MINOR=$(echo "$PYTHON_VERSION" | cut -d. -f2)
-if [ "$PYTHON_MAJOR" -lt 3 ] || { [ "$PYTHON_MAJOR" -eq 3 ] && [ "$PYTHON_MINOR" -lt 10 ]; }; then
-  warning "Python $PYTHON_VERSION detected. Python 3.10 or higher is recommended."
+log "Python ${PYTHON_VERSION} detected"
+
+NODE_VERSION=$(node --version)
+log "Node ${NODE_VERSION} detected"
+
+# ── ML-Datascience ─────────────────────────────────────────────────────────
+log "${BOLD}Setting up ml-datascience…${RESET}"
+cd "$ML_DIR"
+
+if [ ! -d ".venv" ]; then
+  log "Creating Python virtual environment (.venv)…"
+  python3 -m venv .venv
 fi
 
-# Create virtual environment if it doesn't exist
-if [ ! -d "venv" ]; then
-  info "Creating Python virtual environment at ml-datascience/venv..."
-  python3 -m venv venv
-fi
-
-# Activate venv
-source venv/bin/activate
-
-info "Upgrading pip..."
-pip install --upgrade pip --quiet
-
-info "Installing Python packages from requirements.txt..."
-pip install -r requirements.txt --quiet
-
-info "Installing ml-datascience package in editable mode..."
-pip install -e . --quiet
-
-if [ ! -f ".env" ]; then
-  cat > .env << 'EOF'
-OPENAI_API_KEY=your_openai_api_key_here
-OPENAI_MODEL=gpt-4o-mini
-EOF
-  warning "Created ml-datascience/.env — add your OPENAI_API_KEY before running."
-fi
-
+source .venv/bin/activate
+log "Upgrading pip…"
+pip install --quiet --upgrade pip
+log "Installing Python dependencies…"
+pip install --quiet -r requirements.txt
+log "Installing local package (pip install -e .)…"
+pip install --quiet -e .
 deactivate
+ok "ml-datascience dependencies installed."
 
-info "ml-datascience dependencies installed."
+# ── .env file ─────────────────────────────────────────────────────────────
+if [ ! -f "api/.env" ] && [ -f "api/.env.example" ]; then
+  cp api/.env.example api/.env
+  warn "Created ml-datascience/api/.env from .env.example — please fill in OPENAI_API_KEY."
+elif [ ! -f "api/.env" ]; then
+  warn "ml-datascience/api/.env not found and no .env.example to copy from."
+  warn "Create ml-datascience/api/.env with: OPENAI_API_KEY=sk-..."
+fi
 
-# =============================================================================
-# Done
-# =============================================================================
+# ── Web-App ────────────────────────────────────────────────────────────────
+log "${BOLD}Setting up web-app…${RESET}"
+cd "$WEB_DIR"
+
+log "Installing Node dependencies…"
+npm install
+ok "web-app dependencies installed."
+
+# ── .env.local file ───────────────────────────────────────────────────────
+if [ ! -f ".env.local" ]; then
+  cat > .env.local <<'EOF'
+# Fill in your real values before running start.sh
+MONGODB_URI=
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+AUTH_SECRET=
+NEXTAUTH_URL=http://localhost:3000
+ML_BACKEND_URL=http://localhost:8000
+EOF
+  warn "Created web-app/.env.local — please fill in all values before running start.sh."
+fi
+
 echo ""
-echo -e "${GREEN}============================================${NC}"
-echo -e "${GREEN}  All dependencies installed successfully!${NC}"
-echo -e "${GREEN}============================================${NC}"
-echo ""
-echo "  Start web-app:        cd web-app && npm run dev"
-echo "  Start ml-datascience: cd ml-datascience && source venv/bin/activate && uvicorn api.main:app --reload --port 8000"
-echo ""
-echo "  Make sure to fill in your .env files before running."
+echo -e "${BOLD}============================================${RESET}"
+echo -e "  ${GREEN}Installation complete!${RESET}"
+echo -e "${BOLD}============================================${RESET}"
+echo -e "  Next steps:"
+echo -e "  1. Fill in ${BOLD}ml-datascience/api/.env${RESET}"
+echo -e "  2. Fill in ${BOLD}web-app/.env.local${RESET}"
+echo -e "  3. Run:   ${BOLD}bash installation-core/start.sh${RESET}"
 echo ""
