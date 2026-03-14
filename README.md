@@ -1,44 +1,40 @@
 # installation-core — PrepPilot Setup & Launcher
 
-This folder contains scripts to install dependencies and launch both PrepPilot services — the ML backend and the web app — with a single command.
-
----
-
-## Scripts Overview
-
-| Script | Platform | Purpose |
-|---|---|---|
-| `install.sh` | Mac / Linux | Install all dependencies (run once) |
-| `install.bat` | Windows | Install all dependencies (run once) |
-| `start.sh` | Mac / Linux | Launch both services |
-| `start.bat` | Windows | Launch both services (in separate windows) |
+One file, one command, every platform.
 
 ---
 
 ## Quick Start
 
-### Mac / Linux
-
 ```bash
-# Step 1 — install dependencies (first time only)
-bash installation-core/install.sh
-
-# Step 2 — fill in environment files (see setup below)
-
-# Step 3 — launch both services
-bash installation-core/start.sh
+# Mac / Linux / Windows — all the same command:
+python installation-core/run.py
 ```
 
-### Windows
+`run.py` handles everything automatically:
+- Checks Python 3.10+, Node.js 18+, npm
+- Creates `.venv` and installs Python dependencies
+- Installs Node dependencies
+- Creates blank `.env` files if missing (and tells you what to fill in)
+- Starts both services and streams their logs to your terminal
+- **Ctrl-C** gracefully stops both services
 
-```bat
-REM Step 1 — install dependencies (first time only)
-installation-core\install.bat
+### Other scripts (platform-specific alternatives)
 
-REM Step 2 — fill in environment files (see setup below)
+| Script | Platform | Purpose |
+|---|---|---|
+| `run.py` | **All platforms** | Install + start (recommended) |
+| `install.sh` | Mac / Linux | Install deps only |
+| `install.bat` | Windows | Install deps only |
+| `start.sh` | Mac / Linux | Start services only |
+| `start.bat` | Windows | Start services (separate windows) |
 
-REM Step 3 — launch both services
-installation-core\start.bat
+### Flags
+
+```bash
+python installation-core/run.py            # install deps if needed, then start
+python installation-core/run.py --install  # install only, do not start
+python installation-core/run.py --start    # start only, skip install checks
 ```
 
 ---
