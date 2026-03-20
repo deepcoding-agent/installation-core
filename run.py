@@ -74,7 +74,8 @@ def load_env_file(path: Path) -> dict[str, str]:
         if not line or line.startswith("#") or "=" not in line:
             continue
         k, _, v = line.partition("=")
-        env[k.strip()] = v.strip()
+        v = v.strip().strip('"').strip("'")   # remove surrounding quotes
+        env[k.strip()] = v
     return env
 
 def create_env_from_example(example: Path, dest: Path) -> None:
@@ -278,11 +279,22 @@ def start_services() -> None:
     ]
     npm_args = ["npm.cmd", "run", "dev"] if IS_WINDOWS else ["npm", "run", "dev"]
 
+    # Windows: CREATE_NEW_PROCESS_GROUP lets us send CTRL_BREAK_EVENT to each process
+    # Unix: start_new_session=True creates a new process group so killpg works
+    popen_kwargs_ml  = {"cwd": str(ML_DIR), "env": _ml_env()}
+    popen_kwargs_web = {"cwd": str(WEB_DIR)}
+    if IS_WINDOWS:
+        popen_kwargs_ml["creationflags"]  = subprocess.CREATE_NEW_PROCESS_GROUP
+        popen_kwargs_web["creationflags"] = subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        popen_kwargs_ml["start_new_session"]  = True
+        popen_kwargs_web["start_new_session"] = True
+
     log("Starting DS-Agent API  →  http://localhost:8000")
-    ml_proc = subprocess.Popen(uvicorn_args, cwd=str(ML_DIR), env=_ml_env())
+    ml_proc = subprocess.Popen(uvicorn_args, **popen_kwargs_ml)
 
     log("Starting Next.js dev server  →  http://localhost:3000")
-    web_proc = subprocess.Popen(npm_args, cwd=str(WEB_DIR))
+    web_proc = subprocess.Popen(npm_args, **popen_kwargs_web)
 
     procs = [ml_proc, web_proc]
 
@@ -300,7 +312,8 @@ def start_services() -> None:
         for p in procs:
             try:
                 if IS_WINDOWS:
-                    p.terminate()
+                    # CTRL_BREAK_EVENT propagates to the process group we created
+                    p.send_signal(signal.CTRL_BREAK_EVENT)
                 else:
                     os.killpg(os.getpgid(p.pid), signal.SIGTERM)
             except Exception:
@@ -316,8 +329,11 @@ def start_services() -> None:
         ok("All services stopped.")
         sys.exit(0)
 
-    signal.signal(signal.SIGINT,  _shutdown)
-    signal.signal(signal.SIGTERM, _shutdown)
+    signal.signal(signal.SIGINT, _shutdown)
+    try:
+        signal.signal(signal.SIGTERM, _shutdown)
+    except (OSError, ValueError):
+        pass   # SIGTERM registration unsupported on some Windows configurations
 
     while True:
         for p in procs:
