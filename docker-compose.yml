@@ -1,0 +1,38 @@
+services:
+
+  # ── ML Backend (FastAPI + LangChain agents) ────────────────────────────────
+  ml-backend:
+    build:
+      context: ../ml-datascience
+    container_name: ds-agent-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # Hot reload: only source dirs — installed packages stay in image layer
+      - ../ml-datascience/api:/app/api
+      - ../ml-datascience/ai_data_science_team:/app/ai_data_science_team
+    env_file:
+      - ../ml-datascience/api/.env   # OPENAI_API_KEY, OPENAI_MODEL, LOG_LEVEL
+    restart: unless-stopped
+
+  # ── Web App (Next.js) ──────────────────────────────────────────────────────
+  web-app:
+    build:
+      context: ../web-app
+    container_name: ds-agent-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      # Hot reload: mount source directories
+      - ../web-app/src:/app/src
+      - ../web-app/public:/app/public
+      - ../web-app/prisma:/app/prisma   # SQLite db persisted on host
+    environment:
+      # Override localhost → Docker service name
+      - ML_BACKEND_URL=http://ml-backend:8000
+      - DATABASE_URL=file:./prisma/dev.db
+    env_file:
+      - ../web-app/.env.local   # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AUTH_SECRET
+    depends_on:
+      - ml-backend
+    restart: unless-stopped

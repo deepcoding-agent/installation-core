@@ -1,284 +1,215 @@
-# installation-core — PrepPilot Setup & Launcher
+# installation-core — DS-Agent Setup & Launcher
 
-One file, one command, every platform.
+Central control for all services. One command to install, one command to run — works on Mac, Linux, and Windows.
 
 ---
 
-## Quick Start
+## Repository Structure
 
-```bash
-# Mac / Linux / Windows — all the same command:
-python installation-core/run.py
+This project uses **4 separate git repositories** that live side-by-side:
+
+```
+seniorproject/
+├── installation-core/    ← this repo — controls everything
+├── web-app/              ← Next.js frontend
+├── ml-datascience/       ← FastAPI ML backend
+└── docs/                 ← documentation
 ```
 
-`run.py` handles everything automatically:
-- Checks Python 3.10+, Node.js 18+, npm
-- Creates `.venv` and installs Python dependencies
-- Installs Node dependencies
-- Creates blank `.env` files if missing (and tells you what to fill in)
-- Starts both services and streams their logs to your terminal
-- **Ctrl-C** gracefully stops both services
-
-### Other scripts (platform-specific alternatives)
-
-| Script | Platform | Purpose |
-|---|---|---|
-| `run.py` | **All platforms** | Install + start (recommended) |
-| `install.sh` | Mac / Linux | Install deps only |
-| `install.bat` | Windows | Install deps only |
-| `start.sh` | Mac / Linux | Start services only |
-| `start.bat` | Windows | Start services (separate windows) |
-
-### Flags
-
-```bash
-python installation-core/run.py            # install deps if needed, then start
-python installation-core/run.py --install  # install only, do not start
-python installation-core/run.py --start    # start only, skip install checks
-```
+Clone all repos into the **same parent folder** before continuing.
 
 ---
 
 ## Prerequisites
 
-| Tool | Minimum Version | Install |
-|---|---|---|
-| Python | 3.10+ | [python.org](https://python.org) · Mac: `brew install python` · Windows: check **"Add to PATH"** during install |
+| Tool | Minimum | Install |
+|------|---------|---------|
+| Python | 3.10+ | [python.org](https://python.org) · Mac: `brew install python` |
 | Node.js | 18+ | [nodejs.org](https://nodejs.org) · Mac: `brew install node` |
 | npm | 9+ | Bundled with Node.js |
-| OpenAI API key | — | [platform.openai.com](https://platform.openai.com) |
-| MongoDB Atlas URI | — | [mongodb.com/atlas](https://www.mongodb.com/atlas) |
-| Google OAuth credentials | — | [console.cloud.google.com](https://console.cloud.google.com) (setup below) |
+| Docker Desktop | latest | [docker.com](https://docker.com) *(Docker mode only)* |
+| OpenAI API key | — | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Google OAuth credentials | — | [console.cloud.google.com](https://console.cloud.google.com) |
 
 ---
 
-## First-Time Setup
+## Two Ways to Run
 
-### Step 1 — Run the installer
+| Mode | When to use |
+|------|-------------|
+| **Docker** | Share with teammates, consistent environment, recommended |
+| **Local** | Faster startup, direct access to logs, no Docker needed |
 
-**Mac / Linux:**
+---
+
+## Option A — Docker (Recommended)
+
+### Step 1 — Clone all repositories
+
 ```bash
-bash installation-core/install.sh
+mkdir seniorproject && cd seniorproject
+git clone <installation-core-repo-url> installation-core
+git clone <web-app-repo-url>           web-app
+git clone <ml-datascience-repo-url>    ml-datascience
 ```
 
-**Windows:**
-```bat
-installation-core\install.bat
+### Step 2 — Configure environment files
+
+**ML backend** — copy and fill in `ml-datascience/api/.env`:
+
+```bash
+cp ml-datascience/api/.env.example ml-datascience/api/.env
 ```
-
-The installer will:
-- Create a Python virtual environment in `ml-datascience/.venv`
-- Install all Python dependencies from `requirements.txt`
-- Install Node dependencies in `web-app/node_modules`
-- Create blank `.env` and `.env.local` template files if they don't exist
-
----
-
-### Step 2 — Configure the ML backend
 
 Edit `ml-datascience/api/.env`:
-
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini    # optional — this is the default
+OPENAI_MODEL=gpt-4o-mini
 ```
 
-Get your OpenAI API key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+**Web app** — copy and fill in `web-app/.env.local`:
+
+```bash
+cp web-app/.env.local.example web-app/.env.local
+```
+
+Edit `web-app/.env.local`:
+```env
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=your-client-secret
+AUTH_SECRET=your-random-secret
+NEXTAUTH_URL=http://localhost:3000
+ML_BACKEND_URL=http://localhost:8000
+DATABASE_URL="file:./prisma/dev.db"
+```
+
+> See [Google OAuth Setup](#google-oauth-setup) below for how to get `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+### Step 3 — Build and start
+
+```bash
+python installation-core/run.py --docker-build
+```
+
+This will:
+- Verify Docker is running
+- Build Docker images for both services
+- Start the ML backend on port **8000**
+- Start the Web app on port **3000**
+- Mount source code so code changes reflect in real-time (hot reload)
+
+### Step 4 — Open the app
+
+| Service | URL |
+|---------|-----|
+| Web App | http://localhost:3000 |
+| ML Backend API | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
 
 ---
 
-### Step 3 — Set up Google OAuth
+### Docker — Daily Commands
 
-You need a Google OAuth 2.0 client to enable login.
+```bash
+# Start (after first build — fast)
+python installation-core/run.py --docker
+
+# Stop
+python installation-core/run.py --docker-down
+
+# Rebuild images (after pulling new code or changing dependencies)
+python installation-core/run.py --docker-build
+```
+
+---
+
+## Option B — Local (No Docker)
+
+### Step 1 — Clone all repositories
+
+Same as Docker Step 1.
+
+### Step 2 — Configure environment files
+
+Same as Docker Step 2.
+
+### Step 3 — Install and start
+
+```bash
+python installation-core/run.py
+```
+
+This single command:
+1. Checks Python 3.10+, Node.js 18+, npm
+2. Creates `ml-datascience/.venv` and installs Python dependencies
+3. Runs `npm install` in `web-app/`
+4. Checks all `.env` files are filled in
+5. Starts both services with hot reload
+6. Press **Ctrl-C** to gracefully stop both
+
+### Step 4 — Open the app
+
+Same URLs as Docker mode.
+
+---
+
+### Local — Daily Commands
+
+```bash
+# Install deps only (after pulling new code)
+python installation-core/run.py --install
+
+# Start only (deps already installed)
+python installation-core/run.py --start
+
+# Install + start (safe to run every time)
+python installation-core/run.py
+```
+
+---
+
+## All Commands Reference
+
+```bash
+python installation-core/run.py                 # local: install deps + start
+python installation-core/run.py --install       # local: install deps only
+python installation-core/run.py --start         # local: start only
+
+python installation-core/run.py --docker        # Docker: start (no rebuild)
+python installation-core/run.py --docker-build  # Docker: rebuild images + start
+python installation-core/run.py --docker-down   # Docker: stop all containers
+```
+
+---
+
+## Google OAuth Setup
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project (or select an existing one)
-3. Navigate to **APIs & Services → Credentials**
+2. Create a new project (or select existing)
+3. Go to **APIs & Services → Credentials**
 4. Click **Create Credentials → OAuth 2.0 Client ID**
 5. Set Application type to **Web application**
-6. Under **Authorized redirect URIs**, click **Add URI** and enter:
+6. Under **Authorized redirect URIs**, add:
    ```
    http://localhost:3000/api/auth/callback/google
    ```
-7. Click **Save**
-8. Copy the **Client ID** and **Client Secret**
+7. Click **Save** — copy the **Client ID** and **Client Secret** into `web-app/.env.local`
 
-> **Important:** The redirect URI `http://localhost:3000/api/auth/callback/google` must be added exactly as shown. Without it, Google will reject the OAuth callback and login will fail.
-
----
-
-### Step 4 — Set up MongoDB Atlas
-
-1. Go to [mongodb.com/atlas](https://www.mongodb.com/atlas) and create a free cluster
-2. Create a database user with read/write access
-3. Add your IP address to the **Network Access** allowlist (or use `0.0.0.0/0` for development)
-4. Click **Connect → Drivers** and copy the connection string
+> The redirect URI must match exactly. Without it, Google login will fail.
 
 ---
 
-### Step 5 — Configure the web app
+## Generate AUTH_SECRET
 
-Edit `web-app/.env.local`:
-
-```env
-MONGODB_URI=mongodb+srv://<user>:<password>@<cluster>.mongodb.net/preppilot?retryWrites=true&w=majority
-GOOGLE_CLIENT_ID=<your-google-client-id>
-GOOGLE_CLIENT_SECRET=<your-google-client-secret>
-AUTH_SECRET=<random-64-char-string>
-NEXTAUTH_URL=http://localhost:3000
-ML_BACKEND_URL=http://localhost:8000
-```
-
-Generate a secure `AUTH_SECRET`:
-
-**Mac / Linux:**
 ```bash
+# Mac / Linux
+openssl rand -hex 32
+
+# Any platform (requires Node.js)
 npx auth secret
 ```
 
-**Windows:**
-```bat
-npx auth secret
-```
-
-Or generate manually:
-```bash
-openssl rand -base64 48
-```
-
----
-
-### Step 6 — Launch
-
-**Mac / Linux:**
-```bash
-bash installation-core/start.sh
-```
-
-**Windows:**
-```bat
-installation-core\start.bat
-```
-
-Expected output after startup:
-```
-============================================
-  ML backend → http://localhost:8000
-  Web app    → http://localhost:3000
-============================================
-  Press Ctrl-C to stop both services.
-```
-
-On Windows, both services open in separate terminal windows.
-
----
-
-## Services at a Glance
-
-| Service | URL | Description |
-|---|---|---|
-| Web App | http://localhost:3000 | Next.js chat interface |
-| ML Backend | http://localhost:8000 | FastAPI data-science agent |
-| Health Check | http://localhost:8000/health | Returns `{"status":"ok"}` |
-| API Docs | http://localhost:8000/docs | Swagger UI |
-
----
-
-## What the Scripts Do
-
-```
-install.sh / install.bat
-├── Check Python and Node.js are installed
-├── Create ml-datascience/.venv (if not present)
-├── pip install -r requirements.txt + pip install -e .
-├── npm install in web-app/
-├── Create ml-datascience/api/.env from .env.example (if missing)
-└── Create web-app/.env.local template (if missing)
-
-start.sh (Mac/Linux)
-├── Activate .venv and validate OPENAI_API_KEY
-├── Start: uvicorn api.main:app --host 0.0.0.0 --port 8000 --reload  (background)
-├── Start: npm run dev  (background)
-├── Wait for both processes
-└── Ctrl-C gracefully kills both services
-
-start.bat (Windows)
-├── Validate .env files and OPENAI_API_KEY
-├── Open "PrepPilot - ML Backend" in a new terminal window
-├── Open "PrepPilot - Web App" in a new terminal window
-└── Close either window or press Ctrl-C inside to stop that service
-```
-
----
-
-## Subsequent Runs
-
-Already-installed dependencies are skipped — re-running `install.sh`/`install.bat` is safe and fast. Startup only takes a few seconds on subsequent `start.sh`/`start.bat` runs.
-
----
-
-## Stopping Services
-
-**Mac / Linux:** Press `Ctrl-C` in the terminal running `start.sh`. Both services are gracefully shut down.
-
-**Windows:** Close the "PrepPilot - ML Backend" and "PrepPilot - Web App" terminal windows, or press `Ctrl-C` in each.
-
----
-
-## Troubleshooting
-
-| Problem | Cause | Fix |
-|---|---|---|
-| `OPENAI_API_KEY is not set` | Missing or empty `.env` | Edit `ml-datascience/api/.env` and add your key |
-| `Please fill in .env.local` | Web app env file is blank | Fill in all values in `web-app/.env.local` and re-run |
-| Google login fails / redirect error | Redirect URI not registered | Add `http://localhost:3000/api/auth/callback/google` in Google Cloud Console |
-| Port 8000 already in use | Another process on that port | Mac/Linux: `lsof -i :8000` then kill the PID · Windows: `netstat -ano \| findstr :8000` then `taskkill /PID <pid> /F` |
-| Port 3000 already in use | Another Next.js dev server | Mac/Linux: `lsof -i :3000` then kill the PID · Windows: `netstat -ano \| findstr :3000` then `taskkill /PID <pid> /F` |
-| `python3: command not found` | Python not installed or not in PATH | Mac: `brew install python` · Windows: reinstall Python with "Add to PATH" checked |
-| `npm: command not found` | Node.js not installed | Install from [nodejs.org](https://nodejs.org) |
-| Node deps out of date | Pulled new changes from git | Delete `web-app/node_modules` and re-run `install.sh`/`install.bat` |
-| Python deps out of date | Pulled new changes from git | Delete `ml-datascience/.venv` and re-run `install.sh`/`install.bat` |
-| `.venv\Scripts\activate` error on Windows | Python venv not created | Run `install.bat` first |
-
----
-
-## Manual Launch (without these scripts)
-
-**ML backend:**
-
-Mac/Linux:
-```bash
-cd ml-datascience
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt && pip install -e .
-uvicorn api.main:app --reload --port 8000
-```
-
-Windows:
-```bat
-cd ml-datascience
-python -m venv .venv
-.venv\Scripts\activate.bat
-pip install -r requirements.txt
-pip install -e .
-uvicorn api.main:app --reload --port 8000
-```
-
-**Web app (separate terminal):**
-
-Mac/Linux:
-```bash
-cd web-app
-npm install
-npm run dev
-```
-
-Windows:
-```bat
-cd web-app
-npm install
-npm run dev
-```
+Paste the output as `AUTH_SECRET` in `web-app/.env.local`.
 
 ---
 
@@ -286,9 +217,27 @@ npm run dev
 
 ```
 installation-core/
-├── install.sh     # Dependency installer (Mac / Linux)
-├── install.bat    # Dependency installer (Windows)
-├── start.sh       # Unified launcher (Mac / Linux)
-├── start.bat      # Unified launcher (Windows)
-└── README.md      # This file
+├── run.py              ← single launcher for all modes (Mac/Linux/Windows)
+├── docker-compose.yml  ← Docker service definitions
+├── install.sh          ← dependency installer (Mac / Linux)
+├── install.bat         ← dependency installer (Windows)
+├── start.sh            ← service starter (Mac / Linux)
+├── start.bat           ← service starter (Windows)
+└── README.md           ← this file
 ```
+
+---
+
+## Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| `OPENAI_API_KEY is empty` | Edit `ml-datascience/api/.env` and add your key |
+| `Missing values in web-app/.env.local` | Fill in `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET` |
+| Google login fails | Add `http://localhost:3000/api/auth/callback/google` in Google Cloud Console |
+| `Docker daemon is not running` | Open Docker Desktop and wait for it to fully start |
+| Port 3000 or 8000 already in use | Kill the process using that port: `lsof -i :3000` (Mac/Linux) or `netstat -ano \| findstr :3000` (Windows) |
+| `python3: command not found` | Install Python from [python.org](https://python.org) and make sure it's in PATH |
+| `npm: command not found` | Install Node.js from [nodejs.org](https://nodejs.org) |
+| Code changes not reflected (Docker) | Make sure you're not running `--docker-build` unnecessarily — hot reload handles code changes automatically |
+| Dependencies out of date after `git pull` | Local: run `--install`. Docker: run `--docker-build` |
