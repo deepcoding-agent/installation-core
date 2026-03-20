@@ -85,25 +85,28 @@ def create_env_from_example(example: Path, dest: Path) -> None:
         dest.write_text("# Fill in values\n", encoding="utf-8")
         warn(f"Created empty {dest.relative_to(ROOT)} — fill in your values.")
 
-# ── Repo presence check ───────────────────────────────────────────────────────
+# ── Repo URLs ─────────────────────────────────────────────────────────────────
+
+REPOS = {
+    WEB_DIR: "https://github.com/deepcoding-agent/web-app.git",
+    ML_DIR:  "https://github.com/deepcoding-agent/ml-datascience.git",
+}
+
+# ── Repo presence check & auto-clone ─────────────────────────────────────────
 
 def check_repos() -> None:
-    """Make sure sibling repos were cloned before doing anything else."""
-    missing = []
-    if not ML_DIR.exists():
-        missing.append(f"  ml-datascience/  →  git clone <ml-datascience-repo-url> {ML_DIR.name}")
-    if not WEB_DIR.exists():
-        missing.append(f"  web-app/         →  git clone <web-app-repo-url> {WEB_DIR.name}")
+    """Clone sibling repos if they are missing."""
+    require_cmd("git", "Install git from https://git-scm.com")
 
-    if missing:
-        print()
-        print(_c("31", "  [run] ERROR: Required repositories are missing."))
-        print()
-        print("  Clone them into the same parent folder as installation-core/:")
-        for m in missing:
-            print(m)
-        print()
-        sys.exit(1)
+    for dest, url in REPOS.items():
+        if dest.exists():
+            continue
+        log(f"Cloning {url} → {dest.name}/")
+        try:
+            run(["git", "clone", url, str(dest)])
+            ok(f"{dest.name}/ cloned.")
+        except subprocess.CalledProcessError:
+            die(f"Failed to clone {url}\nCheck your internet connection or repo access.")
 
 # ── Prerequisite checks ───────────────────────────────────────────────────────
 
