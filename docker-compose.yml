@@ -8,9 +8,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      # Hot reload: only source dirs — installed packages stay in image layer
+      # Hot reload: only source dir — installed packages stay in image layer
       - ../ml-datascience/api:/app/api
-      - ../ml-datascience/ai_data_science_team:/app/ai_data_science_team
     env_file:
       - ../ml-datascience/api/.env   # OPENAI_API_KEY, OPENAI_MODEL, LOG_LEVEL
     restart: unless-stopped
