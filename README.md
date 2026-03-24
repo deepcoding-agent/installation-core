@@ -1,4 +1,4 @@
-# installation-core — DS-Agent Setup & Launcher
+# installation-core — PrepPilot Setup & Launcher
 
 One repo to clone. One command to run. Everything else is automatic.
 
@@ -48,11 +48,11 @@ git clone https://github.com/deepcoding-agent/installation-core.git installation
 The first run will create `../ml-datascience/api/.env` from the example file automatically. Open it and fill in:
 
 ```env
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o-mini
+ANTHROPIC_API_KEY=sk-ant-...
+ANTHROPIC_MODEL=claude-sonnet-4-6
 ```
 
-Get your key at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
+Get your key at [console.anthropic.com](https://console.anthropic.com).
 
 ---
 
@@ -146,7 +146,7 @@ Each folder is its own git repository.
 | Problem | Fix |
 |---------|-----|
 | `Failed to clone ...` | Check internet connection and that you have access to the repos |
-| `OPENAI_API_KEY is empty` | Edit `../ml-datascience/api/.env` |
+| `ANTHROPIC_API_KEY is empty` | Edit `../ml-datascience/api/.env` |
 | `... still has a placeholder value` | Replace the example value with your real credentials |
 | `Docker daemon is not running` | Open Docker Desktop and wait for it to fully start |
 | `git: command not found` | Install git from [git-scm.com](https://git-scm.com) |
