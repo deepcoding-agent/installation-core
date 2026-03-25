@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DS-Agent — single-command launcher (Mac / Linux / Windows)
+PrepPilot — single-command launcher (Mac / Linux / Windows)
 
 Usage:
     python installation-core/run.py              # install deps + start (no Docker)
@@ -209,7 +209,7 @@ def docker_up(build: bool = False) -> None:
     if not check_env_files():
         sys.exit(1)
 
-    banner("DS-Agent — Docker")
+    banner("PrepPilot — Docker")
 
     cmd = ["docker", "compose", "-f", str(COMPOSE), "up"]
     if build:
@@ -266,7 +266,7 @@ def _ml_env() -> dict[str, str]:
     return env
 
 def start_services() -> None:
-    banner("DS-Agent — starting services (local)")
+    banner("PrepPilot — starting services (local)")
 
     if not VENV_PYTHON.exists():
         die("Python virtual environment not found. Run without --start first.")
@@ -290,7 +290,7 @@ def start_services() -> None:
         popen_kwargs_ml["start_new_session"]  = True
         popen_kwargs_web["start_new_session"] = True
 
-    log("Starting DS-Agent API  →  http://localhost:8000")
+    log("Starting PrepPilot API  →  http://localhost:8000")
     ml_proc = subprocess.Popen(uvicorn_args, **popen_kwargs_ml)
 
     log("Starting Next.js dev server  →  http://localhost:3000")
@@ -348,7 +348,7 @@ def start_services() -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="DS-Agent — install and start all services."
+        description="PrepPilot — install and start all services."
     )
     group = parser.add_mutually_exclusive_group()
     group.add_argument("--docker",       action="store_true", help="Start with Docker (no rebuild)")
@@ -358,7 +358,7 @@ def main() -> None:
     group.add_argument("--start",        action="store_true", help="Start local services (skip install)")
     args = parser.parse_args()
 
-    banner("DS-Agent  run.py")
+    banner("PrepPilot  run.py")
 
     check_repos()   # fail fast if sibling repos are missing
 
