@@ -11,7 +11,7 @@ services:
       # Hot reload: only source dir — installed packages stay in image layer
       - ../ml-datascience/api:/app/api
     env_file:
-      - ../ml-datascience/api/.env   # OPENAI_API_KEY, OPENAI_MODEL, LOG_LEVEL
+      - ../ml-datascience/api/.env   # ANTHROPIC_API_KEY, OPENAI_API_KEY, LOG_LEVEL
     restart: unless-stopped
 
   # ── Web App (Next.js) ──────────────────────────────────────────────────────

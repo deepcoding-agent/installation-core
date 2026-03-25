@@ -2,6 +2,10 @@
 
 One repo to clone. One command to run. Everything else is automatic.
 
+**PrepPilot** is an AI-powered data science preparation platform — 106 pre-built handlers,
+AI-driven auto-cleaning, ML data preparation, 22 interactive chart types, and sandboxed
+Python execution. Supports Anthropic Claude and OpenAI GPT models.
+
 ---
 
 ## Quick Start
@@ -50,9 +54,13 @@ The first run will create `../ml-datascience/api/.env` from the example file aut
 ```env
 ANTHROPIC_API_KEY=sk-ant-...
 ANTHROPIC_MODEL=claude-sonnet-4-6
+OPENAI_API_KEY=sk-...          # optional — for GPT models
+OPENAI_MODEL=gpt-4o-mini       # default AI model
+LOG_LEVEL=info
 ```
 
-Get your key at [console.anthropic.com](https://console.anthropic.com).
+Get your Anthropic key at [console.anthropic.com](https://console.anthropic.com).
+Get your OpenAI key at [platform.openai.com](https://platform.openai.com).
 
 ---
 
@@ -111,6 +119,17 @@ python run.py --start          # start only (deps already installed)
 | Web App | http://localhost:3000 |
 | ML Backend | http://localhost:8000 |
 | API Docs (Swagger) | http://localhost:8000/docs |
+| Health Check | http://localhost:8000/health |
+
+### Key Features
+
+| Feature | Command | Description |
+|---------|---------|-------------|
+| AI Chat | Natural language | Ask questions, clean data, visualize — all through chat |
+| Auto-Clean | `/cleaning` | AI analyzes and cleans your dataset automatically |
+| ML Prepare | `/ml-prepare` | AI prepares train/test splits with optimized preprocessing |
+| 106 Handlers | Built-in | Stats, cleaning, transform, visualization, feature engineering |
+| 22 Charts | Plotly | Bar, pie, scatter, heatmap, violin, QQ plot, and more |
 
 ---
 
