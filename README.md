@@ -11,9 +11,10 @@ One repo to clone. One command to run. Everything else is automatic.
 | | |
 |---|---|
 | **Stack** | Next.js 16 (frontend) + FastAPI (backend) + Anthropic Claude / OpenAI GPT + Plotly + Docker |
-| **Handlers** | 106 pre-built handlers across 5 categories (stats, clean, transform, viz, feature) |
-| **Charts** | 22 interactive Plotly chart types with minimal design theme |
-| **AI Agents** | Planner, Step Executor, Code Generator, Result Interpreter, Context Analyzer |
+| **Handlers** | 350 pre-built handlers across 7 categories (stats, clean, transform, viz, feature, nlp, analysis) |
+| **Charts** | 50 interactive Plotly chart types (bar, pie, scatter, donut, radar, waterfall, funnel, sankey, candlestick, etc.) |
+| **File Formats** | 20+ upload formats: .csv, .xlsx, .xls, .json, .jsonl, .yaml, .yml, .html, .txt, .md, .xml, .srt, .sql, .env, .ini, .log, .out, .ods, .tsv |
+| **AI Agents** | Router, Planner, Step Executor, Code Generator, Result Interpreter, Context Analyzer |
 | **Pipeline** | 10-step automated ML data preparation with AI-optimized config |
 | **Auth** | Google OAuth via NextAuth v5 |
 | **Database** | SQLite (dev) / MongoDB (prod) |
@@ -143,33 +144,38 @@ python run.py --start            # start only (deps already installed)
 | `/ml-prepare price` | ML preparation with specified target column |
 | Natural language | Ask anything: "fill missing values", "show distribution of price", "remove outliers" |
 
-### Handler Categories (106 total)
+### Handler Categories (350 total)
 
 | Category | Count | Examples |
 |----------|-------|----------|
-| **Stats** | 18 | describe, correlation, normality test, class balance, outlier report |
-| **Clean** | 20 | fill nulls, remove duplicates, fix types, clip outliers, map values |
-| **Transform** | 26 | filter, sort, pivot, melt, encode, scale, rolling, rank |
-| **Visualization** | 22 | bar, pie, scatter, histogram, heatmap, violin, QQ, density |
-| **Feature Engineering** | 20 | PCA, importance, lag, text features, target encode, power transform |
+| **Stats** | 50 | describe, correlation, normality test, class balance, outlier report, skewness, kurtosis |
+| **Clean** | 50 | fill nulls, remove duplicates, fix types, clip outliers, map values, standardize formats |
+| **Transform** | 50 | filter, sort, pivot, melt, encode, scale, rolling, rank, reshape, window functions |
+| **Visualization** | 50 | bar, pie, scatter, donut, radar, waterfall, funnel, sankey, candlestick, histogram, heatmap, violin, QQ, density |
+| **Feature Engineering** | 50 | PCA, importance, lag, text features, target encode, power transform, interaction terms |
+| **NLP** | 50 | text cleaning, tokenization, TF-IDF, sentiment analysis, word frequency, stopword removal, n-grams |
+| **Analysis** | 50 | clustering, PCA, anomaly detection, A/B testing, bootstrap CI, time series decomposition |
 
 ### AI-Driven Features
 
 | Feature | What it does |
 |---------|-------------|
+| **Two-Stage Routing** | Router classifies user intent first, then Planner uses a focused handler catalog for precise routing — faster and more accurate than single-stage |
 | **Auto-Clean** | AI reads dataset, identifies issues (nulls, dupes, type mismatches, outliers), plans and executes cleaning operations |
 | **Auto-Prepare** | AI analyzes target column, decides optimal preprocessing config (scaling, encoding, outlier treatment), runs 10-step pipeline |
-| **Smart Chart Selection** | AI picks the right chart type based on user intent — pie for proportions, histogram for distributions, scatter for relationships |
-| **AI Planner** | Every user message is routed through an LLM planner that decides handler vs code generation |
+| **Smart Chart Selection** | AI picks the right chart type from 50 Plotly chart types based on user intent — pie for proportions, histogram for distributions, scatter for relationships |
+| **Direct Answer** | AI can answer general questions (e.g., "what is PCA?") without touching the dataset |
+| **Conversation History** | Planner remembers context from previous messages for multi-turn conversations |
 
 ### Output Formats
 
 | Type | Description |
 |------|-------------|
 | **Inline Table** | Query results shown in chat, downloadable as CSV |
-| **Interactive Charts** | Plotly charts with fullscreen, zoom, hover |
-| **Generated Datasets** | New datasets saved to topbar, reusable in next steps |
-| **ML-Ready Folder** | 4 files (X_train, X_test, y_train, y_test) + metadata, downloadable as ZIP |
+| **Plotly JSON Charts** | 50 interactive chart types rendered via react-plotly.js with fullscreen modal, zoom, hover, and export |
+| **Generated Datasets** | New datasets saved to DatasetPicker, reusable in next steps |
+| **ML-Ready Folder** | 4 files (X_train, X_test, y_train, y_test) + metadata, downloadable as ZIP via PrepFolderCard |
+| **Preprocessing Report** | Step-by-step collapsible report of pipeline operations via PrepReportCard |
 
 ---
 
@@ -199,15 +205,17 @@ User (browser)
 │  └── GET  /models        → available AI models   │
 │                                                  │
 │  AI Agents:                                      │
-│  ├── Planner → routes to handler or codegen      │
+│  ├── Router → classifies intent category         │
+│  ├── Planner → uses focused catalog for routing  │
 │  ├── Step Executor → runs handlers sequentially  │
 │  ├── Code Generator → LLM writes Python          │
 │  ├── Result Interpreter → explains results       │
 │  └── Context Analyzer → dataset profiling        │
 │                                                  │
-│  106 Handlers:                                   │
-│  ├── stats (18)  clean (20)  transform (26)      │
-│  ├── viz (22)    feature (20)                    │
+│  350 Handlers (7 categories):                    │
+│  ├── stats (50)  clean (50)  transform (50)      │
+│  ├── viz (50)    feature (50)                    │
+│  ├── nlp (50)    analysis (50)                   │
 │  └── Sandboxed exec() for generated code         │
 └──────────────────────────────────────────────────┘
 ```
@@ -228,8 +236,15 @@ seniorproject/
 │   └── public/              static assets
 └── ml-datascience/          ← cloned automatically
     ├── api/
-    │   ├── agents/          AI agents (planner, executor, etc.)
-    │   ├── handlers/        106 pre-built data operations
+    │   ├── agents/          AI agents (router, planner, executor, etc.)
+    │   ├── handlers/        350 pre-built data operations
+    │   │   ├── stats_handler.py      50 stats handlers
+    │   │   ├── clean_handler.py      50 cleaning handlers
+    │   │   ├── transform_handler.py  50 transform handlers
+    │   │   ├── viz_handler.py        50 visualization handlers
+    │   │   ├── feature_handler.py    50 feature engineering handlers
+    │   │   ├── nlp_handler.py        50 NLP handlers
+    │   │   └── analysis_handler.py   50 analysis handlers
     │   ├── routes/          FastAPI endpoints
     │   └── sandbox.py       sandboxed code execution
     └── docs/                handler reference
