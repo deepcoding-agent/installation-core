@@ -1,6 +1,6 @@
 services:
 
-  # ── ML Backend (FastAPI + LangChain agents) ────────────────────────────────
+  # ── ML Backend (FastAPI + LangChain agents + 393 handlers) ──────────────────
   ml-backend:
     build:
       context: ../ml-datascience
@@ -12,9 +12,15 @@ services:
       - ../ml-datascience/api:/app/api
     env_file:
       - ../ml-datascience/api/.env   # ANTHROPIC_API_KEY, OPENAI_API_KEY, LOG_LEVEL
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
-  # ── Web App (Next.js) ──────────────────────────────────────────────────────
+  # ── Web App (Next.js + Prisma + NextAuth) ───────────────────────────────────
   web-app:
     build:
       context: ../web-app
@@ -33,5 +39,6 @@ services:
     env_file:
       - ../web-app/.env.local   # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AUTH_SECRET
     depends_on:
-      - ml-backend
+      ml-backend:
+        condition: service_healthy
     restart: unless-stopped
