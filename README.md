@@ -11,11 +11,11 @@ One repo to clone. One command to run. Works on **macOS, Linux, and Windows**.
 | | |
 | --- | --- |
 | **Stack** | Next.js 16 + FastAPI + Anthropic Claude / OpenAI GPT + Plotly + Docker |
-| **Handlers** | 396 pre-built handlers across 7 categories |
-| **Charts** | 57 interactive Plotly chart types |
+| **Handlers** | 417 pre-built handlers across 7 categories |
+| **Charts** | 56 interactive Plotly chart types |
 | **File Formats** | 20+ upload formats (CSV, Excel, JSON, YAML, Parquet, etc.) |
 | **AI Agents** | Router, Planner, Step Executor, Code Generator, Interpreter |
-| **Commands** | `/cleaning`, `/ml-prepare`, `/insights`, `/report` |
+| **Commands** | `/cleaning`, `/ml-prepare`, `/insights`, `/report`, `/train` |
 | **Auth** | Google OAuth via NextAuth v5 |
 | **Database** | SQLite (dev) / MongoDB (prod) |
 
@@ -373,14 +373,14 @@ seniorproject/
 └── ml-datascience/           <-- cloned automatically
     └── api/
         ├── agents/           AI agents (router, planner, executor, etc.)
-        ├── handlers/         396 pre-built data operations
+        ├── handlers/         417 pre-built data operations
         │   ├── stats/        56 statistics handlers
-        │   ├── clean/        54 cleaning handlers
-        │   ├── transform/    59 transform handlers
-        │   ├── viz/          57 visualization handlers
-        │   ├── feature/      54 feature engineering handlers
-        │   ├── nlp/          57 NLP/text handlers
-        │   └── analysis/     59 analysis handlers
+        │   ├── clean/        60 cleaning handlers
+        │   ├── transform/    64 transform handlers
+        │   ├── viz/          56 visualization handlers
+        │   ├── feature/      63 feature engineering handlers
+        │   ├── nlp/          56 NLP/text handlers
+        │   └── analysis/     62 analysis handlers
         ├── routes/           FastAPI endpoints
         └── sandbox.py        Sandboxed code execution
 ```
@@ -396,8 +396,10 @@ Each folder is its own git repository.
 | `/cleaning` | AI auto-cleans dataset (nulls, duplicates, types, outliers) |
 | `/ml-prepare` | AI prepares train/test split with optimized preprocessing |
 | `/ml-prepare price` | ML preparation with specified target column |
+| `/train` | Auto ML — train 5-8 models, tune hyperparameters, evaluate with charts |
+| `/train price` | Train with specified target column |
 | `/insights` | Technical analysis — weaknesses, possible analyses, action plan |
-| `/report` | Business EDA — use cases, market analysis, strategies |
+| `/report` | Business intelligence report — market analysis, strategies, action items |
 | Natural language | Ask anything: "show distribution of price", "remove outliers", "translate to English" |
 
 ---
@@ -419,17 +421,18 @@ User (browser)
 ┌──────────────────────────────────────────────────────────┐
 │  FastAPI (ml-datascience)                port 8000       │
 │  ├── POST /chat          → DS-Agent orchestrator         │
+│  ├── POST /train         → Auto ML training pipeline     │
 │  ├── POST /auto-clean    → AI auto-cleaning              │
 │  ├── POST /auto-prepare  → AI ML preparation             │
 │  ├── POST /prepare       → 10-step pipeline              │
 │  ├── POST /insights      → AI insights report            │
-│  ├── POST /documents     → Full EDA document report      │
+│  ├── POST /documents     → Business intelligence report  │
 │  ├── POST /eda-report    → Structured EDA                │
 │  └── GET  /models        → Available AI models           │
 │                                                          │
-│  396 Handlers (7 categories):                            │
-│  stats(56) clean(54) transform(59) viz(57)               │
-│  feature(54) nlp(57) analysis(59)                        │
+│  417 Handlers (7 categories):                            │
+│  stats(56) clean(60) transform(64) viz(56)               │
+│  feature(63) nlp(56) analysis(62)                        │
 └──────────────────────────────────────────────────────────┘
 ```
 
@@ -519,4 +522,4 @@ Get-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess | Stop-Proc
 
 ---
 
-*Senior Project — Computer Engineering, KMUTT 2025*
+*Senior Project — Applied computer science , KMUTT 2026*
