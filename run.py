@@ -209,7 +209,24 @@ def docker_up(build: bool = False) -> None:
     if not check_env_files():
         sys.exit(1)
 
+    # Windows WSL2 check
+    if IS_WINDOWS:
+        try:
+            info = subprocess.check_output(
+                ["docker", "info", "--format", "{{.OSType}}"],
+                text=True, stderr=subprocess.DEVNULL,
+            ).strip()
+            if info == "linux":
+                ok("Docker Desktop with WSL 2 backend detected.")
+        except Exception:
+            pass
+
     banner("PrepPilot — Docker")
+
+    # Set COMPOSE_CONVERT_WINDOWS_PATHS for Docker Compose V1 compat
+    env = os.environ.copy()
+    if IS_WINDOWS:
+        env["COMPOSE_CONVERT_WINDOWS_PATHS"] = "1"
 
     cmd = ["docker", "compose", "-f", str(COMPOSE), "up"]
     if build:
@@ -217,18 +234,25 @@ def docker_up(build: bool = False) -> None:
 
     print(f"  {_c('32', 'ML backend')}  →  http://localhost:8000")
     print(f"  {_c('32', 'Web app')}     →  http://localhost:3000")
-    print(f"  Press {_c('1', 'Ctrl-C')} to stop.\n")
+    print(f"  {_c('32', 'API docs')}    →  http://localhost:8000/docs")
+    print(f"\n  Hot reload is ON — edit code on your machine,")
+    print(f"  changes apply automatically inside containers.")
+    print(f"\n  Press {_c('1', 'Ctrl-C')} to stop.\n")
 
     try:
-        subprocess.run(cmd, cwd=str(SCRIPT_DIR), check=True)
+        subprocess.run(cmd, cwd=str(SCRIPT_DIR), env=env, check=True)
     except KeyboardInterrupt:
         pass
 
 def docker_down() -> None:
     log("Stopping Docker services…")
+    env = os.environ.copy()
+    if IS_WINDOWS:
+        env["COMPOSE_CONVERT_WINDOWS_PATHS"] = "1"
     subprocess.run(
         ["docker", "compose", "-f", str(COMPOSE), "down"],
         cwd=str(SCRIPT_DIR),
+        env=env,
     )
     ok("All Docker services stopped.")
 

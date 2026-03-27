@@ -1,43 +1,63 @@
+# PrepPilot — Docker Compose (cross-platform: macOS / Linux / Windows)
+# Usage:  docker compose up --build     (first run)
+#         docker compose up              (subsequent runs)
+#         docker compose down            (stop)
+
 services:
 
-  # ── ML Backend (FastAPI + LangChain agents + 393 handlers) ──────────────────
+  # ── ML Backend (FastAPI + AI Agents + 396 handlers) ─────────────────────────
   ml-backend:
     build:
       context: ../ml-datascience
-    container_name: ds-agent-backend
+      dockerfile: Dockerfile
+    container_name: preppilot-backend
     ports:
       - "8000:8000"
     volumes:
-      # Hot reload: only source dir — installed packages stay in image layer
+      # Hot reload: mount source dir — edit api/*.py on host, changes apply instantly
       - ../ml-datascience/api:/app/api
     env_file:
-      - ../ml-datascience/api/.env   # ANTHROPIC_API_KEY, OPENAI_API_KEY, LOG_LEVEL
+      - ../ml-datascience/api/.env
+    environment:
+      # Force polling for file watcher — required on Windows, harmless on macOS/Linux
+      - WATCHFILES_FORCE_POLLING=true
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
+      # Use Python stdlib — no curl/wget dependency needed
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 15s
       timeout: 5s
-      retries: 3
-      start_period: 15s
+      retries: 5
+      start_period: 20s
     restart: unless-stopped
 
-  # ── Web App (Next.js + Prisma + NextAuth) ───────────────────────────────────
+  # ── Web App (Next.js 16 + Prisma + NextAuth) ───────────────────────────────
   web-app:
     build:
       context: ../web-app
-    container_name: ds-agent-frontend
+      dockerfile: Dockerfile
+    container_name: preppilot-frontend
     ports:
       - "3000:3000"
     volumes:
-      # Hot reload: mount source directories
+      # Hot reload: mount source dirs — edit tsx/ts on host, Next.js reloads instantly
       - ../web-app/src:/app/src
       - ../web-app/public:/app/public
-      - ../web-app/prisma:/app/prisma   # SQLite db persisted on host
+      - ../web-app/prisma:/app/prisma
+      # Config files: mount so changes to next.config/tailwind/tsconfig also hot reload
+      - ../web-app/next.config.ts:/app/next.config.ts
+      - ../web-app/tsconfig.json:/app/tsconfig.json
+      - ../web-app/tailwind.config.ts:/app/tailwind.config.ts
+      - ../web-app/postcss.config.mjs:/app/postcss.config.mjs
     environment:
-      # Override localhost → Docker service name
+      # Docker internal networking — backend is reachable via service name
       - ML_BACKEND_URL=http://ml-backend:8000
       - DATABASE_URL=file:./prisma/dev.db
+      # Force polling for file watcher — required on Windows/WSL2, harmless on macOS/Linux
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - NEXT_TELEMETRY_DISABLED=1
     env_file:
-      - ../web-app/.env.local   # GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, AUTH_SECRET
+      - ../web-app/.env.local
     depends_on:
       ml-backend:
         condition: service_healthy
