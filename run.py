@@ -143,7 +143,6 @@ _PLACEHOLDERS = {
     "your-random-secret",
     "your-random-secret-here",
     "sk-...",
-    "sk-proj-",
 }
 
 def _is_placeholder(value: str) -> bool:
