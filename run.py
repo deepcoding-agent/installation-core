@@ -268,7 +268,6 @@ def install_python_deps() -> None:
     log("Installing / verifying Python dependencies…")
     run([str(VENV_PIP), "install", "--quiet", "--upgrade", "pip"])
     run([str(VENV_PIP), "install", "--quiet", "-r", str(ML_DIR / "requirements.txt")])
-    run([str(VENV_PIP), "install", "--quiet", "-e", str(ML_DIR)])
     ok("Python dependencies ready.")
 
 def install_node_deps() -> None:
