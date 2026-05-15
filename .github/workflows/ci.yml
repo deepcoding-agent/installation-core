@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: infra-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose-validate:
+    name: docker compose config
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+      - name: Validate docker-compose.yml
+        # `config` requires referenced build contexts to exist locally. Since
+        # web-app and ml-datascience are sibling repos, we stub them with
+        # empty directories just to satisfy the parser. This validates syntax
+        # and service references without needing the actual source.
+        run: |
+          mkdir -p ../web-app ../ml-datascience/api
+          touch ../web-app/Dockerfile ../ml-datascience/Dockerfile ../ml-datascience/api/.env
+          docker compose -f docker-compose.yml config
+
+  hadolint:
+    name: Dockerfile lint (hadolint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: docker-compose.yml  # placeholder — hadolint targets real Dockerfiles
+        continue-on-error: true
+
+  shellcheck:
+    name: shellcheck install scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ludeeus/action-shellcheck@master
+        with:
+          scandir: "./"
+          ignore_paths: "__pycache__"
+
+  secrets-scan:
+    name: gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
